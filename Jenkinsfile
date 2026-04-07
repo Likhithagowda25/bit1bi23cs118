@@ -1,9 +1,13 @@
 pipeline {
     agent any
 
+    environment {
+        JAVA_HOME = "/usr/lib/jvm/java-11-openjdk-amd64"
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
+    }
+
     tools {
-        maven 'Maven'
-        jdk 'Java 11'
+        maven 'Maven'  // must match the Maven installation name in Jenkins
     }
 
     stages {
