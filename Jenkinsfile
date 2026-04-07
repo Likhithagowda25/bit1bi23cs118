@@ -6,6 +6,16 @@ pipeline {
         jdk 'JDK'
     }
 
+    environment {
+        APP_NAME = 'bitMyMavenApp'
+        JAR_FILE = 'target/bitMyMavenApp-1.0-SNAPSHOT.jar'
+    }
+
+    triggers {
+        // Poll SCM every 2 minutes (optional)
+        pollSCM('H/2 * * * *')
+    }
+
     stages {
 
         stage('Checkout') {
@@ -16,7 +26,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn clean package'
+                sh 'mvn clean package -DskipTests'
             }
         }
 
@@ -24,22 +34,38 @@ pipeline {
             steps {
                 sh 'mvn test'
             }
+            post {
+                always {
+                    junit '**/target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('Archive Artifacts') {
+            steps {
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+            }
         }
 
         stage('Run Application') {
             steps {
-                // Start the JAR application
-                sh 'java -jar target/bitMyMavenApp-1.0-SNAPSHOT.jar'
+                echo 'Starting application in background...'
+                sh '''
+                    nohup java -jar ${JAR_FILE} > app.log 2>&1 &
+                '''
             }
         }
     }
 
     post {
         success {
-            echo 'Build and deployment successful!'
+            echo '✅ Build, test, and deployment successful!'
         }
         failure {
-            echo 'Build failed!'
+            echo '❌ Build failed! Check logs.'
+        }
+        always {
+            echo '📌 Pipeline execution completed.'
         }
     }
 }
